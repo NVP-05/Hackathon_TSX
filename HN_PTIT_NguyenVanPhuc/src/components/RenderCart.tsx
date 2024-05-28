@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 interface Cart {
   id: number;
@@ -9,58 +9,71 @@ interface Cart {
   quantity: number;
 }
 
+interface RenderCartProps {
+  cartLocal: Cart[];
+  updateCart: (id: number, quantity: number) => void;
+  deleteProduct: (id: number) => void;
+}
+
 // let cart:Cart[] = [];
 // localStorage.setItem("cart", JSON.stringify(cart));
-export default function RenderCart() {
-  const [cartLocal, setCart] = useState<Cart[]>(() => {
-    const datas = localStorage.getItem("cart");
-    const cartList = datas ? JSON.parse(datas) : [];
-    return cartList;
-  });
-  const [active, setActive] = useState<boolean>(true);
-  const deleteProduct = (id: number) => {
-    for (let i = 0; i < cartLocal.length; i++) {
-      if (id === cartLocal[i].id) {
-        cartLocal.splice(i, 1);
-        localStorage.setItem("cart", JSON.stringify(cartLocal));
-        setActive(!active);
-        window.location.reload();
-      }
-    }
+
+export default function RenderCart({
+  cartLocal,
+  updateCart,
+  deleteProduct,
+}: RenderCartProps) {
+  const [quantities, setQuantities] = useState<{ [key: number]: number }>(
+    cartLocal.reduce((acc, item) => {
+      acc[item.id] = item.quantity;
+      localStorage.setItem("cart", JSON.stringify(cartLocal));
+      return acc;
+    }, {} as { [key: number]: number })
+  );
+
+  const handleQuantityChange = (id: number, quantity: number) => {
+    setQuantities({
+      ...quantities,
+      [id]: quantity,
+    });
   };
 
   return (
     <>
-      {cartLocal.map((item, index) => {
-        return (
-          <tr>
-            <th scope="row">{index + 1}</th>
-            <td>{item.name}</td>
-            <td>{item.price} USD</td>
-            <td>
-              <input
-                name="cart-item-quantity-1"
-                type="number"
-                defaultValue={item.quantity}
-              />
-            </td>
-            <td>
-              <a className="label label-info update-cart-item" data-product="">
-                Update
-              </a>
-              <a
-                onClick={() => {
-                  deleteProduct(item.id);
-                }}
-                className="label label-danger delete-cart-item"
-                data-product=""
-              >
-                Delete
-              </a>
-            </td>
-          </tr>
-        );
-      })}
+      {cartLocal.map((item, index) => (
+        <tr key={item.id}>
+          <th scope="row">{index + 1}</th>
+          <td>{item.name}</td>
+          <td>{item.price} USD</td>
+          <td>
+            <input
+              name={`cart-item-quantity-${item.id}`}
+              type="number"
+              value={quantities[item.id]}
+              onChange={(e) => {
+                const newQuantity = parseInt(e.target.value);
+                handleQuantityChange(item.id, newQuantity);
+              }}
+            />
+          </td>
+          <td>
+            <a
+              onClick={() => updateCart(item.id, quantities[item.id])}
+              className="label label-info update-cart-item"
+              data-product=""
+            >
+              Update
+            </a>
+            <a
+              onClick={() => deleteProduct(item.id)}
+              className="label label-danger delete-cart-item"
+              data-product=""
+            >
+              Delete
+            </a>
+          </td>
+        </tr>
+      ))}
     </>
   );
 }

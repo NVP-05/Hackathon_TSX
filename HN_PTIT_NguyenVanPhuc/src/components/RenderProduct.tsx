@@ -57,6 +57,8 @@ interface Cart {
 //   },
 // ];
 // localStorage.setItem("products", JSON.stringify(products));
+let flag = 0;
+localStorage.setItem("flag", JSON.stringify(flag));
 
 export default function RenderProduct() {
   const [productLocal, setProduct] = useState<Product[]>(() => {
@@ -74,24 +76,45 @@ export default function RenderProduct() {
   const [active, setActive] = useState<boolean>(true);
 
   const add = (id: number) => {
-    for (let i = 0; i < productLocal.length; i++) {
-      if (id == productLocal[i].id) {
-        let newProduct: Product = {
-          id: productLocal[i].id,
-          name: productLocal[i].name,
-          price: productLocal[i].price,
-          status: productLocal[i].status,
-          image: productLocal[i].image,
-          quantity: 1,
-        };
-        cartLocal.push(newProduct);
-        localStorage.setItem("cart", JSON.stringify(cartLocal));
+    window.location.reload();
+    for (let i = 0; i < cartLocal.length; i++) {
+      if (id == cartLocal[i].id) {
+        for (let j = 0; j < productLocal.length; j++) {
+          if (cartLocal[i].id == productLocal[j].id) {
+            if (cartLocal[i].quantity >= productLocal[j].quantity) {
+              alert("Sản phẩm trong kho không còn đủ.");
+              productLocal[j].status = false;
+              localStorage.setItem("products", JSON.stringify(productLocal));
+              setActive(!active);
+              return;
+            }
+          }
+        }
       }
     }
-    window.location.reload();
-    setActive(!active);
-  };
+    let productFound = false;
+    const updatedCart = cartLocal.map((item) => {
+      if (item.id === id) {
+        productFound = true;
+        return { ...item, quantity: item.quantity + 1 };
+      }
+      return item;
+    });
 
+    if (!productFound) {
+      const productToAdd = productLocal.find((product) => product.id === id);
+      if (productToAdd) {
+        updatedCart.push({ ...productToAdd, quantity: 1 });
+        flag = 1;
+        localStorage.setItem("flag", JSON.stringify(flag));
+      }
+    }
+
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    window.location.reload();
+    // setActive(!active);
+  };
   return (
     <>
       {productLocal.map((item: Product) => {
